@@ -1,0 +1,82 @@
+{
+	"name": "klang-support",
+	"displayName": "klang-support",
+	"description": "klang, ksystem proprietary language,  syntax highlighting",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.104.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "klang",
+				"aliases": [
+					"Klang"
+				],
+				"filenames": [],
+				"filenamePatterns": [
+					"sct[0-9]{3,4}"
+				]
+			}
+		],
+		"grammars": [
+			{
+				"language": "klang",
+				"scopeName": "source.klang",
+				"path": "./syntaxes/klang.tmLanguage.json"
+			}
+		],
+		"semanticTokenScopes": [
+			{
+				"language": "klang",
+				"scopes": {
+					"comment.block.klang": [
+						"comment"
+					],
+					"string.quoted.double.klang": [
+						"string"
+					],
+					"constant.numeric.klang": [
+						"number"
+					],
+					"keyword.control.klang": [
+						"keyword"
+					],
+					"keyword.operator.klang": [
+						"operator"
+					],
+					"entity.name.section.klang": [
+						"namespace"
+					],
+					"entity.name.function.klang": [
+						"function"
+					],
+					"support.function.calc.klang": [
+						"function"
+					],
+					"support.function.dbcalc.klang": [
+						"function"
+					],
+					"support.function.hook.klang": [
+						"function"
+					],
+					"constant.language.klang": [
+						"variable.language"
+					],
+					"support.constant.directive.klang": [
+						"macro"
+					],
+					"keyword.other.permit.klang": [
+						"keyword"
+					],
+					"entity.name.macro.klang": [
+						"macro"
+					]
+				}
+			}
+		]
+	}
+}

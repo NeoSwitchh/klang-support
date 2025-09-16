@@ -1,0 +1,182 @@
+{
+	"name": "Klang",
+	"scopeName": "source.klang",
+	"fileTypes": ["ks"],
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#commands"
+		},
+		{
+			"include": "#fields"
+		},
+		{
+			"include": "#calculations"
+		},
+		{
+			"include": "#maps"
+		},
+		{
+			"include": "#hooks"
+		},
+		{
+			"include": "#subfile"
+		},
+		{
+			"include": "#image"
+		}
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.block.klang",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.klang",
+					"match": "\\b(SCREEN|END_SCREEN|IMAGE|FIELD|DEFAULT|EDITS|CALCS|DBCALCS|MAP|HOOKS|SUBFILE|POSTING|PERMIT|RTREE|SCAN|LOCAL|PGM_FIELDS|MASTER_MP|DEFAULTS|\\bSFL_[A-Z0-9_]+\\b|\\bSCR_[A-Z0-9_]+\\b)\\b"
+				},
+				{
+					"name": "keyword.other.klang",
+					"match": "\\b(INIT|INIT_QUERY|INIT_QUERY_F11|DUP_DFALT|DUP_INIT|DFALT_LIST|DFALT_SCAN|DFALT_SCAN_BLANK|DFALT_RADIO_BUTTON|MANDATORY|MANDATORY_IF|MAND_FILL|MAND_PLUS|MAND_ZERO_PLUS|TABLE|TABLE_RANGE|DUPKEY|CHECKSFL_IF|SHOW_SFL|SHOW_IMAGE|SHOW_SCAN|SHOW_SCAN_IF|ADD|ADD_DIR|UPDATE|UPDATE_DIR|UPDATE_BUF3|DELETE|DELETE_RANGE|JOIN|JOIN_DIR|ADD_NO_CLEAR|ADD_NO_CLEAR_DIR|ADD_NO_CLEAR_PRM_DIR|UPDATE_LT|UPDATE_RANGE|JOIN_LT|JOIN_LAST_SFL|SCANSCAN|ADD_SUBSTITUTE|UPD_SUBSTITUTE|MAPMAP|BEFORE_INPUT|AFTER_INPUT|DO_MAP|DO_NXT_POSTING|DO_NXT_POSTING_IF|DO_LIB|DO_LIB_IF|DO_SKIP_IF|DO_SCAN|DO_SCAN_IF|DO_OUT|DOEDITS|DOEDITS_HOME|ADD_ONLY|VALIDATE|ALLCAPS|DIGITS|PROTECT|ALLWORDCAPS|NONE|TOMBOL|NOCHANGE|ALPHANUMERIC)\\b"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.klang",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.klang",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.integer.klang",
+					"match": "\\b\\d+\\b"
+				},
+				{
+					"name": "constant.numeric.float.klang",
+					"match": "\\b\\d+\\.\\d+\\b"
+				}
+			]
+		},
+		"fields": {
+			"patterns": [
+				{
+					"name": "storage.modifier.field.klang",
+					"match": "\\b(SHOW|FRSWORCAPS|SCROLL|PROTECT|QPROTECT|UNSEEN|UNSEEN_IF|INPUTRI|EOL|ZERO|BIG|MEDIUM|PICTURE|NO_CALENDAR|TOMBOL|INT2|INT4|DFLOAT|SFLOAT|STRING|DATE|NONE|NOLIMIT|COLOR)\\b"
+				}
+			]
+		},
+		"commands": {
+			"patterns": [
+				{
+					"name": "entity.name.function.klang",
+					"match": "\\b(LEN|FLD_TO_STRING|STRIP|DO_LIB|ap_bulat|ap_thbln|ap_akmhr|ap_tambl|ap_akhbl|BULAN|THBLN|THBLS|THBLS_DD|THBLS_MM|THBLS_YY|THBLS_YYYY|THBLLLS|THS|CHKDR|CHKDR_TGL|CHKTG|FLISI|FLSIZ|LASTWORD|ap_strln|ap_apprv)\\b"
+				},
+				{
+					"name": "variable.parameter.klang",
+					"match": "\\b(SYSDATE|SYSTIME)\\b"
+				}
+			]
+		},
+		"calculations": {
+			"patterns": [
+				{
+					"name": "entity.name.calculation.klang",
+					"match": "\\b(c[a-zA-Z0-9_]+)\\b",
+					"captures": {
+						"1": { "name": "entity.name.calculation.klang" }
+					}
+				},
+				{
+					"name": "keyword.operator.klang",
+					"match": "(\\+|-|\\*|/|&&|\\|\\||==|!=|<|>|<=|>=|\\$)\\b"
+				}
+			]
+		},
+		"maps": {
+			"patterns": [
+				{
+					"name": "entity.name.map.klang",
+					"match": "\\b(m[a-zA-Z0-9_]+)\\b",
+					"captures": {
+						"1": { "name": "entity.name.map.klang" }
+					}
+				},
+				{
+					"name": "keyword.other.map.klang",
+					"match": "\\b(REPLACE|DO_CALC|DO_CALC_IF|REPLACE_IF)\\b"
+				}
+			]
+		},
+		"hooks": {
+			"patterns": [
+				{
+					"name": "keyword.control.hook.klang",
+					"match": "\\b(cur_field|cur_keybd|IF|ELSE|HKCURSOR|HKMSG|STAY|NOSTAY|HOME)\\b"
+				}
+			]
+		},
+		"subfile": {
+			"patterns": [
+				{
+					"name": "keyword.control.subfile.klang",
+					"match": "\\b(SFL_LINES|SFL_TITLE|SFL_COPY_IMAGE|SFL_MAP_MAP|SFL_RKP_SCR|SFL_RKP_MAP|SFL_RKP_COND|SFL_SELECT|SFL_REKAP|SFL_REKAP2|SFL_REKAP3|SFL_COND|SFL_COPY_COND|SFL_DEL_COND|SFL_TARGET_IF|SFL_TARGET_GTE|SFL_TARGET_GTE_IF|SFL_APP_TYPE|SFL_ADD_OK|SFL_ADD_ENTER|SFL_LIMIT_CABANG|SFL_DIR|SFL_HOOKS_AFTER_EDIT|SFL_SHOW_SFL|SFL_NO_LAST_LINE|SFL_TRANS2_FIELD|SFL_TRANS2_FIELD2|SFL_SORT_BY_FIELD|SFL_SORT_UPDOWN|SFL_TEMPLATE|SFL_SHOW_DETAIL|SFL_UPLFLD|SFL_UPL_COND|SFL_UPLREADONLY)\\b"
+				}
+			]
+		},
+		"image": {
+			"patterns": [
+				{
+					"name": "meta.image.block.klang",
+					"begin": "\\bIMAGE\\s*\\([^)]*\\)\\s*\\n?/[-]+\\\\",
+					"beginCaptures": {
+						"0": { "name": "keyword.control.image.klang" }
+					},
+					"end": "\\\\[-]+/",
+					"patterns": [
+						{
+							"name": "markup.underline.field.klang",
+							"match": "t\\.[A-Za-z0-9_]+"
+						},
+						{
+							"name": "string.other.placeholder.klang",
+							"match": "_+"
+						},
+						{
+							"name": "string.other.title.klang",
+							"match": "s\\.[A-Za-z0-9_]+"
+						},
+						{
+							"name": "punctuation.definition.box.klang",
+							"match": "[/\\\\|\\-]+"
+						}
+					]
+				}
+			]
+		}
+	}
+}

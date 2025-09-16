@@ -1,0 +1,270 @@
+SCREEN 851 QUERY_TYPE t.DataKaryawan
+SCR_FILE psm
+SCR_LOGFLD psmkode
+SCR_UPLFLD psmkode
+SCR_UPLFLD2 psmcab
+SCR_UPL_DIRFLD psmtgl
+SCR_UPLFLD_DBCALCS dupdpsm
+SCR_UPL_DELCOND cblhhpsupl 
+SCR_JOIN_FILE1 psikodidx psmkode
+
+LOCAL
+PGM_FIELDS
+lnamacabang     STRING  251
+ltglkont        DATE    4       
+l3              INT2    2
+ltglakhbl       DATE    4
+lumur           INT2    2
+ldum            INT2    2
+lktpln          INT2    2
+ltomdet2_d      STRING  31
+ltmpterimasdm   STRING  21
+ltomdet_d       STRING  31
+ltomdet_2d      STRING  31
+ltomdet_3d      STRING  31
+lnourt          INT2    2
+
+CALCS()
+        cblhhpsupl      psmdf1 == 0
+        cisi1           psmdf1 + 1
+        cOPENok         psmsts == "OPEN"
+        cOPENbshps      psmsts == "OPEN" && psmdf1 == 0
+        cOPENhps1       psmsts != "OPEN"
+        cOPENhps2       psmsts == "OPEN" && psmdf1 > 0
+        cred            psmsts == "OPEN" || psmsts == "VOID"
+        cgreen          psmsts == "CLSD"         
+        cyellow         psmsts == "INPG"
+
+
+MAP(mupdpsm)
+        cisi1   psmdf1  DO_CALC
+
+DBCALCS(dupdpsm)
+        DBC_COMMAND     UPDATE
+        DBC_TARGET      psmprmidx       psmprm
+        DBC_MAP         mupdpsm
+
+IMAGE(master)
+/-------------------------------------------------------------------\
+
+|/-----------------------------------------------------------\|
+ t.Kode         ______________  t.Sts       _____________
+ t.Tgl          ______________  
+ t.Cabang       ______________ 
+ t.NamaCabang   ______________  
+ t.Nama         ______________  
+ t.Gender       ______________  
+ t.GolDarah     ______________
+ t.TgLahir      ______________  
+ t.TglKont      ______________
+ t.TglAkhBl     ______________
+ t.NoKTP        ______________
+ t.NoKK         ______________
+|\-----------------------------------------------------------/|
+______________          ______________          ______________
+|/------s.UPLOAD------\|             |/------s.UPLOAD2------\|
+
+
+
+
+
+|\--------------------/|             |\---------------------/|
+
+\-------------------------------------------------------------------/
+
+FIELD(master)
+        psmkode         ALLCAPS                                 INPUTRI 1
+        psmsts          PROTECT COLOR=cred,cyellow,cgreen       INPUTRI 2
+        psmtgl          PROTECT {DD-MM-YYYY}                    INPUTRI 3
+        psmcab          ALLCAPS                                 BIG     4
+        lnamacabang     PROTECT                                 INPUTRI 5
+        psmnama         ALLCAPS                                 INPUTRI 6
+        psmgender       NOCHANGE                                INPUTRI 7
+        psmgoldrh       NOCHANGE                                INPUTRI 8
+        psmtgllahir     NONE {DD-MM-YYYY} NOLIMIT NO_CALENDAR   INPUTRI 9
+        psitglkont_1    PROTECT {DD-MM-YYYY}                    INPUTRI 10
+        ltglakhbl       NONE {DD-MM-YYYY} NOLIMIT               INPUTRI 11
+        psmktp          DIGITS                                  INPUTRI 12
+        psmnokk         DIGITS                                  INPUTRI 13
+        ltomdet_d       TOMBOL                                  INPUTRI 14
+        ltomdet_2d      TOMBOL                                  INPUTRI 15
+        ltomdet_3d      TOMBOL                                  INPUTRI 16
+
+DEFAULTS(master)
+        psmdatakry      INIT                    DTKARYAWAN
+        psmsts          INIT                    OPEN
+        psmsts          INIT_QUERY              OPEN
+        psmtgl          INIT                    {g_tgltrn}
+        psmtgl          INIT_QUERY              {g_tgltrn}
+        psmgender       DFALT_RADIO_BUTTON      L P
+        psmgoldrh       DFALT_SCAN              BLANKS
+                                                A   "A"
+                                                B   "B"
+                                                O   "O"
+                                                AB  "AB"
+        l3              INIT                    3
+        ltmpterimasdm   INIT                    TERIMASDM
+        ltomdet_d       INIT                    "1d.Input Data"
+        ltomdet_2d      INIT                    "2d.Informasi"
+        ltomdet_3d      INIT                    "3d.Koreksi"
+
+EDITS(master)
+        e.Mandatory     psmcab  MANDATORY
+        e.Mandatory     psmnokk MANDATORY
+        e.Duplicate     psmkode DUPKEY          psmkodidx
+        e.Validate      psmcab  VALIDATE        cabstskodidx    mcab    scab    {Pgv_INPG}
+
+CALCS()
+        ctglkont        DO_LIB  ap_tambl(psmtgl,l3,&ltglkont);
+        ctglakhbl       DO_LIB  ap_akhbl(psmtgl,&ltglakhbl);
+
+CALCS()
+        ctgllahir       psmtgl-psmtgllahir
+        cumurok         lumur >= 6120
+        
+
+MAP(mcab)
+        cabkode psmcab          REPLACE
+        cabnama lnamacabang     REPLACE
+
+MAP(mtgltrn)
+        ctglkont        psitglkont_1    DO_CALC
+        ctglakhbl       ltglakhbl       DO_CALC
+
+MAP(mtgllahir)
+        ctgllahir       lumur     DO_CALC
+
+MAP(mdum)
+        ldum    ldum    REPLACE
+/*
+cek jumlah digit ktp sebanyak 16
+*/
+CALCS()
+        cktpln  DO_LIB  ap_strln(psmktp,&lktpln);
+        cktpok  lktpln == 16
+
+MAP(mktp)
+        cktpln  lktpln  DO_CALC
+
+HOOKS(master)
+/*
+trigger setelah psmkode diisi trus mtgltrn jalan
+*/
+        AFTER_INPUT     cur_field=psmkode       DO_MAP  SHOW    mtgltrn
+/*
+tampil error kalo umur dibawah 17
+*/
+        AFTER_INPUT     cur_field=psmtgllahir   DO_MAP  SHOW    mtgllahir
+        AFTER_INPUT     cur_field=psmtgllahir   DO_MAP  SHOW
+                        IF cumurok mdum
+                        ELSE HKCURSOR STAY
+                        HKMSG t.UsiaKurangDari17Thn
+/*
+tampil error kalo ktp digit tidak 16
+*/
+        AFTER_INPUT     cur_field=psmktp        DO_MAP  SHOW    mktp
+        AFTER_INPUT     cur_field=psmktp        DO_MAP  SHOW
+                        IF cktpok mdum
+                        ELSE HKCURSOR STAY
+                        HKMSG t.KtpBukan16Digit
+
+PERMIT(master)
+        PMT_UPDALL_COND cOPENok
+        PMT_DEL_COND cOPENbshps
+        PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
+                        IF cOPENhps2    t.HapusGambarDuluu
+/*
+1d. Input Data
+*/
+
+/*
+title template detil yang dibawah
+*/
+IMAGE(transt)
+/-------------------------------\
+|______________________         |
+|-----------------------------t-|
+|i.Keterangan                   |
+\-----------------------------.-/
+
+FIELD(transt)
+        ltomdet2_d      TOMBOL  INPUTRI 1
+
+DEFAULTS(transt)
+        ltomdet2_d      INIT    "d.UntukMelihatLebihDetil"
+
+/*
+ini bagian ininya underscore itu buat nampilin apapun itu, in this case itu tmpket (keterangan template, keterangan template disetting di sct3013) 
+*/
+IMAGE(trans)
+|_______________________________|
+
+FIELD(trans)
+        tmpket          PROTECT SCROLL  INPUTRI 4
+
+SUBFILE(trans)
+        SFL_LINES(12)
+        SFL_TITLE(transt)
+        SFL_TRANS2_FIELD tmpisistr1
+        SFL_TRANS2_FIELD2 tmpisistr2
+
+SFL_TARGET
+        tmpdatkodurt    gv_dttemplate   ltmpterimasdm
+
+SUBFILE(trans2)
+SFL_TEMPLATE(tmp_kk1)
+
+/*
+2d. Informasi (copy from tmp_kk1, variable jadi dup semua)
+*/
+IMAGE(transat)
+/-------t---------------t-----------------------t-------t---------------\
+|Urt    |i.Nama         |i.Nik                  |i.Lp   |i.TmpLahir     |
+\-------t---------------t-----------------------t-------t---------------/
+
+IMAGE(transa)
+|_______|_______________|_______________________|_______|_______________|
+
+FIELD(transa)
+        kkdnourt                DIGITS         INPUTRI 1
+        kkdnama                 ALLCAPS SCROLL  INPUTRI 2
+        kkdktp                  ALLCAPS SCROLL  INPUTRI 3
+        kkdlp                   ALLCAPS SCROLL  INPUTRI 4
+        kkdtmplhr               ALLCAPS SCROLL  INPUTRI 5
+
+EDITS(transa)
+        e.Mandatory     kkdktp  MANDATORY
+
+MAP(mjoinkdddup)
+        kkdnourt        lnourt  REPLACE
+
+DBCALCS(djoinkkddup)
+        DBC_COMMAND     JOIN_LAST_SFL
+        DBC_TARGET      kkdbukidx       psmnokk
+        DBC_MAP         mjoinkdddup
+
+CALCS()
+        cdjoinkkd0dup   djoinkkddup == 0 && g_curcmd == 1
+        cdjoinkkd1dup   djoinkkddup == 1 && g_curcmd == 1
+        c1dup           1
+        curutdup        lnourt + 1
+
+MAP(mnourtdup)
+        c1dup           kkdnourt        DO_CALC_IF      cdjoinkkd0dup
+        curutdup        kkdnourt        DO_CALC_IF      cdjoinkkd1dup
+
+HOOKS(transa)
+        BEFORE_INPUT    cur_field=kkdnourt      DO_MAP  SHOW    mnourtdup
+
+SUBFILE(transa)
+SFL_LINES(15)
+SFL_SHOW_NEXT
+SFL_TITLE(transat)
+
+SFL_TARGET
+        kkdbukidx       psmnokk
+
+SFL_MAP
+        psmnokk         kkdnobuk
+
+END_SCREEN
