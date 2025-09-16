@@ -30,8 +30,7 @@ This extension provides semantic highlighting for Klang source files, including 
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/your-org/vscode-klang.git
-   cd vscode-klang
+   git clone https://github.com/neoswitchh/klang-support
    ```
 
 2. Install dependencies:
@@ -49,15 +48,20 @@ This extension provides semantic highlighting for Klang source files, including 
 4. Install the generated `.vsix`:
 
    ```bash
-   code --install-extension klang-language-0.0.1.vsix
+   code --install-extension klang-support-0.0.1.vsix
    ```
 
-### Manual Install (Drop-in Folder) (curently, recommended)
+### Manual Install (Drop-in Folder) (currently, recommended)
 
 Alternatively, you can copy the extension folder into:
 
-- **Windows**: `%USERPROFILE%\.vscode\extensions`
 - **macOS/Linux**: `~/.vscode/extensions`
+
+Then run this in `~/.vscode/extensions`:
+
+```
+mv klang-support ~/.vscode/extensions/neoswitchh.klang-support-0.0.1
+```
 
 Then reload VSCode.
 
