@@ -2,6 +2,7 @@
 	"name": "klang-support",
 	"displayName": "klang-support",
 	"description": "klang, ksystem proprietary language,  syntax highlighting",
+	"publisher": "NeoSwitchh",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.104.0"
