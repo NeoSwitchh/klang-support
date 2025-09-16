@@ -1,40 +1,99 @@
-# klang-support README
+# Klang Language Support
 
-klang, ksystem proprietary language, syntax highlighting
+Language syntax highlighting for **Klang (K-System)**, a proprietary language used in business applications.
+This extension provides semantic highlighting for Klang source files, including comments, functions, keywords, and UI definitions.
 
-## Features
+---
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## ✨ Features
 
-For example if there is an image subfolder under your extension project workspace:
+- Syntax highlighting for Klang:
+  - `/* ... */` block comments
+  - Functions starting with `ap_XXX`
+  - Directives and constants like `SFL_XXX`, `SCR_XXX`
+  - `IMAGE(...)` blocks and UI definitions
+  - `SCREEN`, `LOCAL`, `MAP`, and other core keywords
+- Semantic scopes follow [TextMate conventions](https://macromates.com/manual/en/language_grammars):
+  - Comments → `comment.block.klang`
+  - Functions → `entity.name.function.klang`
+  - Keywords → `keyword.control.klang`
+  - Constants (SFL/SCR) → `support.constant.klang`
+  - Strings → `string.quoted.klang`
+- Works with **any VSCode theme** — colors will automatically adapt.
 
-\!\[feature X\]\(images/feature-x.png\)
+---
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## 📦 Installation
 
-## Requirements
+### From Source
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+1. Clone this repository:
 
-## Extension Settings
+   ```bash
+   git clone https://github.com/your-org/vscode-klang.git
+   cd vscode-klang
+   ```
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+2. Install dependencies:
 
-For example:
+   ```bash
+   npm install
+   ```
 
-This extension contributes the following settings:
+3. Build and package the extension:
 
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+   ```bash
+   vsce package
+   ```
 
-## Known Issues
+4. Install the generated `.vsix`:
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+   ```bash
+   code --install-extension klang-language-0.0.1.vsix
+   ```
 
-## Release Notes
+### Manual Install (Drop-in Folder) (curently, recommended)
 
-Users appreciate release notes as you update your extension.
+Alternatively, you can copy the extension folder into:
 
-### 1.0.0
+- **Windows**: `%USERPROFILE%\.vscode\extensions`
+- **macOS/Linux**: `~/.vscode/extensions`
 
-Initial release of ...
+Then reload VSCode.
+
+---
+
+## 📂 File Association
+
+Klang doesn’t use file extensions. Instead, it uses filenames like `sct999`, `sct1234`, etc.
+This extension automatically associates any file named:
+
+```
+sct[0-9]{3,4}
+```
+
+with the Klang language.
+
+---
+
+## 🛠 Usage
+
+Open any Klang source file (e.g., `sct999`) and you’ll get syntax highlighting out of the box.
+No configuration required.
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome!
+If you’d like to improve the grammar (add more keywords, functions, or directives):
+
+1. Edit `syntaxes/klang.tmLanguage.json`
+2. Test using `Developer: Inspect Editor Tokens and Scopes` in VSCode
+3. Submit a PR
+
+---
+
+## 📜 License
+
+MIT © 2025 NeoSwitchh
