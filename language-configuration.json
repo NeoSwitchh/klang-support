@@ -24,5 +24,9 @@
 		["(", ")"],
 		["\"", "\""],
 		["'", "'"]
-	]
+	],
+	"indentationRules": {
+		"increaseIndentPattern": "^(LOCAL|CALCS|MAP|FIELD|DEFAULTS|EDITS|HOOKS|PERMIT)\\(",
+		"decreaseIndentPattern": "^(END_SCREEN)"
+	}
 }
