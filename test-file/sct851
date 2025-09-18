@@ -169,10 +169,10 @@ tampil error kalo ktp digit tidak 16
                         HKMSG t.KtpBukan16Digit
 
 PERMIT(master)
-        PMT_UPDALL_COND cOPENok
-        PMT_DEL_COND cOPENbshps
-        PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
-                        IF cOPENhps2    t.HapusGambarDuluu
+PMT_UPDALL_COND cOPENok
+PMT_DEL_COND cOPENbshps
+PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
+                IF cOPENhps2    t.HapusGambarDuluu
 /*
 1d. Input Data
 */

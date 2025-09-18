@@ -51,7 +51,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.klang",
-					"match": "\\b(SCREEN|END_SCREEN|IMAGE|FIELD|DEFAULT|EDITS|CALCS|DBCALCS|SPCALCS|MAP|HOOKS|SUBFILE|POSTING|PERMIT|RTREE|SCAN|LOCAL|PGM_FIELDS|MASTER_MP|DEFAULTS|\\bSFL_[A-Z0-9_]+\\b|\\bSCR_[A-Z0-9_]+\\b|\\bPST_[A-Z0-9_]+\\b|RTREE|USES_SCRIPT|\\bRT_[A-Z0-9_]+\\b)\\b"
+					"match": "\\b(SCREEN|END_SCREEN|IMAGE|FIELD|DEFAULT|EDITS|CALCS|DBCALCS|SPCALCS|MAP|HOOKS|SUBFILE|POSTING|PERMIT|\\bPMT_[A-Z0-9_]+\\b|RTREE|SCAN|LOCAL|PGM_FIELDS|MASTER_MP|DEFAULTS|\\bSFL_[A-Z0-9_]+\\b|\\bSCR_[A-Z0-9_]+\\b|\\bPST_[A-Z0-9_]+\\b|RTREE|USES_SCRIPT|\\bRT_[A-Z0-9_]+\\b)\\b"
 				},
 				{
 					"name": "keyword.other.klang",
