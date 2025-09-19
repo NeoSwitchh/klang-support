@@ -36,7 +36,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
+let formatterEnabled = true; // global flag to enable/disable
 function activate(context) {
+    const toggleDisposable = vscode.commands.registerCommand("klang-formatter.toggle", () => {
+        formatterEnabled = !formatterEnabled;
+        vscode.window.showInformationMessage(`Klang Formatter ${formatterEnabled ? "Enabled" : "Disabled"}`);
+    });
     let disposable = vscode.languages.registerDocumentFormattingEditProvider({ scheme: "file", language: "klang" }, {
         provideDocumentFormattingEdits(document) {
             const edits = [];

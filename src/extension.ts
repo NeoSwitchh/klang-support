@@ -1,6 +1,17 @@
 import * as vscode from "vscode";
 
+let formatterEnabled = true; // global flag to enable/disable
+
 export function activate(context: vscode.ExtensionContext) {
+	const toggleDisposable = vscode.commands.registerCommand(
+		"klang-formatter.toggle",
+		() => {
+			formatterEnabled = !formatterEnabled;
+			vscode.window.showInformationMessage(
+				`Klang Formatter ${formatterEnabled ? "Enabled" : "Disabled"}`
+			);
+		}
+	);
 	let disposable = vscode.languages.registerDocumentFormattingEditProvider(
 		{ scheme: "file", language: "klang" },
 		{
