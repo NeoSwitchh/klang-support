@@ -20,17 +20,17 @@ SCR_APR capprove
 SCR_APRFLD psmkode
 SCR_APR_COND cstsOPEN
 SCR_APR_MSG     IF cstsOPEN01 t.SdhIN
-IF cstsOPEN02 t.SdhOK
-IF cstsOPEN03 t.StsTdkOPEN
-IF cstsOPEN04 t.TglHrsHrini
-IF cstsOPEN05 t.BlmUpl
+                IF cstsOPEN02 t.SdhOK
+                IF cstsOPEN03 t.StsTdkOPEN
+                IF cstsOPEN04 t.TglHrsHrini
+                IF cstsOPEN05 t.BlmUpl
 
 SCR_NXT_POSTING 852
 SCR_NXT_COND cpsmOPEN
 SCR_NXT_MAP mposting
 SCR_NXT_MSG     IF cpsmOPEN01 t.StsTdkOPEN
-IF cpsmOPEN02 t.TglHrsHrini
-IF cpsmOPEN03 t.AprovalBlmOK
+                IF cpsmOPEN02 t.TglHrsHrini
+                IF cpsmOPEN03 t.AprovalBlmOK
 
 
 LOCAL

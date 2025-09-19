@@ -111,7 +111,7 @@ function activate(context) {
                     continue;
                 }
                 // detect continuation (lots of spaces at start)
-                if (/^\s{20,}/.test(line)) {
+                if (/^\s{10,}/.test(line)) {
                     flushBuffer();
                     lines.push(line);
                     inContinuationBlock = true;
