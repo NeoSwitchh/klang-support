@@ -1,48 +1,92 @@
 SCREEN 851 QUERY_TYPE t.DataKaryawan
 SCR_FILE psm
 SCR_LOGFLD psmkode
+/*
+SCR preprocessor buat upload
+*/
 SCR_UPLFLD psmkode
 SCR_UPLFLD2 psmcab
 SCR_UPL_DIRFLD psmtgl
 SCR_UPLFLD_DBCALCS dupdpsm
 SCR_UPL_DELCOND cblhhpsupl 
+/*
+SCR preprocessor buat join file, ngehubungin psm sama psi
+*/
 SCR_JOIN_FILE1 psikodidx psmkode
+/*
+SCR preprocessor buat approval
+*/
+SCR_APR capprove
+SCR_APRFLD psmkode
+SCR_APR_COND cstsOPEN
+SCR_APR_MSG     IF cstsOPEN01 t.SdhIN
+IF cstsOPEN02 t.SdhOK
+IF cstsOPEN03 t.StsTdkOPEN
+IF cstsOPEN04 t.TglHrsHrini
+IF cstsOPEN05 t.BlmUpl
+
+SCR_NXT_POSTING 852
+SCR_NXT_COND cpsmOPEN
+SCR_NXT_MAP mposting
+SCR_NXT_MSG     IF cpsmOPEN01 t.StsTdkOPEN
+IF cpsmOPEN02 t.TglHrsHrini
+IF cpsmOPEN03 t.AprovalBlmOK
+
 
 LOCAL
 PGM_FIELDS
-lnamacabang     STRING  251
-ltglkont        DATE    4       
-l3              INT2    2
-ltglakhbl       DATE    4
-lumur           INT2    2
-ldum            INT2    2
-lktpln          INT2    2
-ltomdet2_d      STRING  31
-ltmpterimasdm   STRING  21
-ltomdet_d       STRING  31
-ltomdet_2d      STRING  31
-ltomdet_3d      STRING  31
-lnourt          INT2    2
+lnamacabang      STRING    251
+ltglkont         DATE      4
+l3               INT2      2
+ltglakhbl        DATE      4
+lumur            INT2      2
+ldum             INT2      2
+lktpln           INT2      2
+ltmpterimasdm    STRING    21
+ltomdet2_d       STRING    31
+ltomdet_d        STRING    31
+ltomdet_2d       STRING    31
+ltomdet_3d       STRING    31
+lnourt           INT2      2
+l1               DFLOAT    8
+lyturutapr       STRING    3
+lnamafldsts      STRING    30
+lnamafldfak      STRING    30
+lnamaidxfak      STRING    30
+lpil             INT2      2
 
 CALCS()
-        cblhhpsupl      psmdf1 == 0
-        cisi1           psmdf1 + 1
-        cOPENok         psmsts == "OPEN"
-        cOPENbshps      psmsts == "OPEN" && psmdf1 == 0
-        cOPENhps1       psmsts != "OPEN"
-        cOPENhps2       psmsts == "OPEN" && psmdf1 > 0
-        cred            psmsts == "OPEN" || psmsts == "VOID"
-        cgreen          psmsts == "CLSD"         
-        cyellow         psmsts == "INPG"
-
+cblhhpsupl    psmdf1 == 0
+cisi1         psmdf1 + 1
+cOPENok       psmsts == "OPEN"
+cOPENbshps    psmsts == "OPEN" && psmdf1 == 0
+cOPENhps1     psmsts != "OPEN"
+cOPENhps2     psmsts == "OPEN" && psmdf1 > 0
+cred          psmsts == "OPEN" || psmsts == "VOID"
+cyellow       psmsts == "INPG"
+cgreen        psmsts == "CLSD"
+cred1         psmstsapr == "VOID"
+cyellow1      psmstsapr == "IN"
+cgreen1       psmstsapr == "OK"
+capprove      DO_LIB ap_aprmt(psmkode,gv_aprumum,psmcab,psmtype,l1,lnamafldsts,lnamafldfak,lnamaidxfak,psmjmltlk,lyturutapr,g_usrstr,g_usrstr);
+cstsOPEN      psmstsapr!="OK" && psmstsapr!="IN"
+cstsOPEN01    psmstsapr=="OK"
+cstsOPEN02    psmstsapr=="IN"
+cstsOPEN03    psmsts!="OPEN"
+cstsOPEN04    psmtgl!=g_tgltrn
+cstsOPEN05    psmdf1>=2
+cpsmOPEN      psmsts=="OPEN" && psmtgl==g_tgltrn && psmstsapr=="OK"
+cpsmOPEN01    psmsts!="OPEN"
+cpsmOPEN02    psmtgl!=g_tgltrn
+cpsmOPEN03    psmstsapr!="OK"
 
 MAP(mupdpsm)
-        cisi1   psmdf1  DO_CALC
+cisi1    psmdf1    DO_CALC
 
 DBCALCS(dupdpsm)
-        DBC_COMMAND     UPDATE
-        DBC_TARGET      psmprmidx       psmprm
-        DBC_MAP         mupdpsm
+DBC_COMMAND    UPDATE
+DBC_TARGET     psmprmidx    psmprm
+DBC_MAP        mupdpsm
 
 IMAGE(master)
 /-------------------------------------------------------------------\
@@ -60,6 +104,8 @@ IMAGE(master)
  t.TglAkhBl     ______________
  t.NoKTP        ______________
  t.NoKK         ______________
+ t.KodeApr      ______________
+ t.StsApr       ______________
 |\-----------------------------------------------------------/|
 ______________          ______________          ______________
 |/------s.UPLOAD------\|             |/------s.UPLOAD2------\|
@@ -73,106 +119,113 @@ ______________          ______________          ______________
 \-------------------------------------------------------------------/
 
 FIELD(master)
-        psmkode         ALLCAPS                                 INPUTRI 1
-        psmsts          PROTECT COLOR=cred,cyellow,cgreen       INPUTRI 2
-        psmtgl          PROTECT {DD-MM-YYYY}                    INPUTRI 3
-        psmcab          ALLCAPS                                 BIG     4
-        lnamacabang     PROTECT                                 INPUTRI 5
-        psmnama         ALLCAPS                                 INPUTRI 6
-        psmgender       NOCHANGE                                INPUTRI 7
-        psmgoldrh       NOCHANGE                                INPUTRI 8
-        psmtgllahir     NONE {DD-MM-YYYY} NOLIMIT NO_CALENDAR   INPUTRI 9
-        psitglkont_1    PROTECT {DD-MM-YYYY}                    INPUTRI 10
-        ltglakhbl       NONE {DD-MM-YYYY} NOLIMIT               INPUTRI 11
-        psmktp          DIGITS                                  INPUTRI 12
-        psmnokk         DIGITS                                  INPUTRI 13
-        ltomdet_d       TOMBOL                                  INPUTRI 14
-        ltomdet_2d      TOMBOL                                  INPUTRI 15
-        ltomdet_3d      TOMBOL                                  INPUTRI 16
+psmkode         ALLCAPS                                  INPUTRI 1
+psmsts          PROTECT COLOR=cred,cyellow,cgreen        INPUTRI 2
+psmtgl          PROTECT {DD-MM-YYYY}                     INPUTRI 3
+psmcab          ALLCAPS                                  BIG           4
+lnamacabang     PROTECT                                  INPUTRI 5
+psmnama         ALLCAPS                                  INPUTRI 6
+psmgender       NOCHANGE                                 INPUTRI 7
+psmgoldrh       NOCHANGE                                 INPUTRI 8
+psmtgllahir     NONE {DD-MM-YYYY} NOLIMIT NO_CALENDAR    INPUTRI 9
+psitglkont_1    PROTECT {DD-MM-YYYY}                     INPUTRI 10
+ltglakhbl       NONE {DD-MM-YYYY} NOLIMIT                INPUTRI 11
+psmktp          DIGITS                                   INPUTRI 12
+psmnokk         DIGITS                                   INPUTRI 13
+psmtype         PROTECT                                  INPUTRI 14
+psmstsapr       PROTECT COLOR=cred1,cyellow1,cgreen1     INPUTRI 15
+ltomdet_d       TOMBOL                                   INPUTRI 16
+ltomdet_2d      TOMBOL                                   INPUTRI 17
+ltomdet_3d      TOMBOL                                   INPUTRI 18
+
 
 DEFAULTS(master)
-        psmdatakry      INIT                    DTKARYAWAN
-        psmsts          INIT                    OPEN
-        psmsts          INIT_QUERY              OPEN
-        psmtgl          INIT                    {g_tgltrn}
-        psmtgl          INIT_QUERY              {g_tgltrn}
-        psmgender       DFALT_RADIO_BUTTON      L P
-        psmgoldrh       DFALT_SCAN              BLANKS
+psmdatakry    INIT                  DTKARYAWAN
+psmsts        INIT                  OPEN
+psmsts        INIT_QUERY            OPEN
+psmtgl        INIT                  {g_tgltrn}
+psmtgl        INIT_QUERY            {g_tgltrn}
+psmgender     DFALT_RADIO_BUTTON    L P
+psmgoldrh     DFALT_SCAN            BLANKS
                                                 A   "A"
                                                 B   "B"
                                                 O   "O"
                                                 AB  "AB"
-        l3              INIT                    3
-        ltmpterimasdm   INIT                    TERIMASDM
-        ltomdet_d       INIT                    "1d.Input Data"
-        ltomdet_2d      INIT                    "2d.Informasi"
-        ltomdet_3d      INIT                    "3d.Koreksi"
+l3               INIT           3
+ltmpterimasdm    INIT           TERIMASDM
+ltomdet_d        INIT           "1d.Input Data"
+ltomdet_2d       INIT           "2d.Informasi"
+ltomdet_3d       INIT           "3d.Koreksi"
+l1               INIT           2
+lyturutapr       INIT           Y
+lnamafldsts      INIT           "psmstsapr"
+lnamafldfak      INIT           "psmkode"
+lnamaidxfak      INIT           "psmkodidx"
+psmtype          INIT           ACC_REKRUIT
+psmtype          INIT_UPDATE    ACC_REKRUIT
 
 EDITS(master)
-        e.Mandatory     psmcab  MANDATORY
-        e.Mandatory     psmnokk MANDATORY
-        e.Duplicate     psmkode DUPKEY          psmkodidx
-        e.Validate      psmcab  VALIDATE        cabstskodidx    mcab    scab    {Pgv_INPG}
+e.Mandatory    psmcab               MANDATORY
+e.Mandatory    psmnokk MANDATORY
+e.Duplicate    psmkode DUPKEY       psmkodidx
+e.Validate     psmcab               VALIDATEcabstskodidxmcabscab{Pgv_INPG}
 
 CALCS()
-        ctglkont        DO_LIB  ap_tambl(psmtgl,l3,&ltglkont);
-        ctglakhbl       DO_LIB  ap_akhbl(psmtgl,&ltglakhbl);
+ctglkont     DO_LIBap_tambl(psmtgl,l3,&ltglkont);
+ctglakhbl    DO_LIBap_akhbl(psmtgl,&ltglakhbl);
 
 CALCS()
-        ctgllahir       psmtgl-psmtgllahir
-        cumurok         lumur >= 6120
-        
+ctgllahir    psmtgl-psmtgllahir
+cumurok      lumur >= 6120
 
 MAP(mcab)
-        cabkode psmcab          REPLACE
-        cabnama lnamacabang     REPLACE
+cabkode psmcab         REPLACE
+cabnama lnamacabang    REPLACE
 
 MAP(mtgltrn)
-        ctglkont        psitglkont_1    DO_CALC
-        ctglakhbl       ltglakhbl       DO_CALC
+ctglkont     psitglkont_1    DO_CALC
+ctglakhbl    ltglakhbl       DO_CALC
 
 MAP(mtgllahir)
-        ctgllahir       lumur     DO_CALC
+ctgllahir    lumur    DO_CALC
 
 MAP(mdum)
-        ldum    ldum    REPLACE
+ldum    ldum    REPLACE
 /*
 cek jumlah digit ktp sebanyak 16
 */
 CALCS()
-        cktpln  DO_LIB  ap_strln(psmktp,&lktpln);
-        cktpok  lktpln == 16
+cktpln    DO_LIBap_strln(psmktp,&lktpln);
+cktpok    lktpln == 16
 
 MAP(mktp)
-        cktpln  lktpln  DO_CALC
+cktpln    lktpln    DO_CALC
 
 HOOKS(master)
 /*
 trigger setelah psmkode diisi trus mtgltrn jalan
 */
-        AFTER_INPUT     cur_field=psmkode       DO_MAP  SHOW    mtgltrn
+AFTER_INPUT    cur_field=psmkode    DO_MAPSHOWmtgltrn
 /*
 tampil error kalo umur dibawah 17
 */
-        AFTER_INPUT     cur_field=psmtgllahir   DO_MAP  SHOW    mtgllahir
-        AFTER_INPUT     cur_field=psmtgllahir   DO_MAP  SHOW
+AFTER_INPUT    cur_field=psmtgllahir    DO_MAPSHOWmtgllahir
+AFTER_INPUT    cur_field=psmtgllahir    DO_MAPSHOW
                         IF cumurok mdum
                         ELSE HKCURSOR STAY
                         HKMSG t.UsiaKurangDari17Thn
 /*
 tampil error kalo ktp digit tidak 16
 */
-        AFTER_INPUT     cur_field=psmktp        DO_MAP  SHOW    mktp
-        AFTER_INPUT     cur_field=psmktp        DO_MAP  SHOW
+AFTER_INPUT    cur_field=psmktp    DO_MAPSHOWmktp
+AFTER_INPUT    cur_field=psmktp    DO_MAPSHOW
                         IF cktpok mdum
                         ELSE HKCURSOR STAY
                         HKMSG t.KtpBukan16Digit
 
-PERMIT(master)
-PMT_UPDALL_COND cOPENok
-PMT_DEL_COND cOPENbshps
-PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
-                IF cOPENhps2    t.HapusGambarDuluu
+
+MAP(mposting)
+psmkode r_string1    REPLACE
 /*
 1d. Input Data
 */
@@ -188,10 +241,10 @@ IMAGE(transt)
 \-----------------------------.-/
 
 FIELD(transt)
-        ltomdet2_d      TOMBOL  INPUTRI 1
+ltomdet2_d    TOMBOL    INPUTRI 1
 
 DEFAULTS(transt)
-        ltomdet2_d      INIT    "d.UntukMelihatLebihDetil"
+ltomdet2_d    INIT    "d.UntukMelihatLebihDetil"
 
 /*
 ini bagian ininya underscore itu buat nampilin apapun itu, in this case itu tmpket (keterangan template, keterangan template disetting di sct3013) 
@@ -204,7 +257,7 @@ FIELD(trans)
 
 SUBFILE(trans)
         SFL_LINES(12)
-        SFL_TITLE(transt)
+        SFL_TITLE(transt)       
         SFL_TRANS2_FIELD tmpisistr1
         SFL_TRANS2_FIELD2 tmpisistr2
 
@@ -266,5 +319,34 @@ SFL_TARGET
 
 SFL_MAP
         psmnokk         kkdnobuk
+
+PERMIT(master)
+        PMT_UPDALL_COND cOPENok
+        PMT_DEL_COND cOPENbshps
+        PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
+                        IF cOPENhps2    t.HapusGambarDuluu
+
+IMAGE(report) {LSTFLD_ADVANCE} {BASE_ROW=2}
+/----------------------------\
+|/--------------------------\|
+||t.Pil	   :________________||
+|\--------------------------/|
+\----------------------------/
+
+FIELD(report)
+lpil    DIGITS    INPUTRI 1
+
+DEFAULTS(report)
+lpil    DFALT_SCAN
+                                                1 "Laporan Rinci SDM"
+
+CALCS()
+cpil1    lpil == 1
+
+RTREE(report)
+RT_COND cpil1
+USES_SCRIPT(scr131-pl.rptdesign)
+RT_HTML
+
 
 END_SCREEN
