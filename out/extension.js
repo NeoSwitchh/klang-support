@@ -37,76 +37,125 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 function activate(context) {
-    let disposable = vscode.commands.registerCommand("klang-formatter.format", () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
-        const document = editor.document;
-        const selection = editor.selection;
-        const start = selection.start.line;
-        const end = selection.end.line;
-        const lines = [];
-        let buffer = [];
-        let inBlock = false;
-        let currentMaxCols = Infinity; // dynamic max columns
-        function flushBuffer() {
-            if (buffer.length === 0)
-                return;
-            const maxWidths = [];
-            for (const { tokens } of buffer) {
-                tokens.forEach((t, i) => {
-                    maxWidths[i] = Math.max(maxWidths[i] || 0, t.length);
-                });
-            }
-            for (const { index, tokens } of buffer) {
-                const padded = tokens.map((t, i) => t.padEnd(maxWidths[i] + (i === tokens.length - 1 ? 0 : 2)));
-                lines[index] = padded.join("");
-            }
-            buffer = [];
-        }
-        for (let i = start; i <= end; i++) {
-            const line = document.lineAt(i).text;
-            // detect block headers → set max columns
-            if (/^(SCREEN|SCR_|SUBFILE|SFL_|POSTING|PST_)/i.test(line)) {
-                flushBuffer();
-                currentMaxCols = 1;
-                inBlock = true;
-                lines.push(line);
-                continue;
-            }
-            if (/^CALCS\b/i.test(line)) {
-                flushBuffer();
-                currentMaxCols = 2;
-                inBlock = true;
-                lines.push(line);
-                continue;
-            }
-            if (/^(MAP|DEFAULTS|EDITS|FIELD)\b/i.test(line)) {
-                flushBuffer();
-                currentMaxCols = 3;
-                inBlock = true;
-                lines.push(line);
-                continue;
-            }
-            if (/^(LOCAL|PGM_FIELDS|IMAGE|END)/i.test(line)) {
-                flushBuffer();
-                currentMaxCols = Infinity; // reset
-                inBlock = false;
-                lines.push(line);
-                continue;
-            }
-            // process inside block
-            if (inBlock && line.trim() !== "") {
-                let tokens = line.trim().split(/\s+/);
-                if (tokens.length > 1) {
-                    // limit column count based on current block
-                    if (currentMaxCols !== Infinity && tokens.length > currentMaxCols) {
-                        const fixed = tokens.slice(0, currentMaxCols - 1);
-                        const rest = tokens.slice(currentMaxCols - 1).join(" ");
-                        tokens = [...fixed, rest];
+    let disposable = vscode.languages.registerDocumentFormattingEditProvider({ scheme: "file", language: "klang" }, {
+        provideDocumentFormattingEdits(document) {
+            const edits = [];
+            const lines = [];
+            const buffer = [];
+            let inImageBlock = false;
+            let inCommentBlock = false;
+            let inContinuationBlock = false;
+            let currentColCount = 1; // default flat
+            function flushBuffer() {
+                if (buffer.length === 0)
+                    return;
+                // find max width per column
+                const colWidths = [];
+                for (const { tokens } of buffer) {
+                    tokens.forEach((t, idx) => {
+                        if (idx < currentColCount) {
+                            colWidths[idx] = Math.max(colWidths[idx] || 0, t.length);
+                        }
+                    });
+                }
+                for (const { index, tokens, colCount } of buffer) {
+                    let newLine = "";
+                    if (colCount === 1) {
+                        // just join
+                        newLine = tokens.join(" ");
                     }
-                    buffer.push({ index: lines.length, tokens, inBlock });
+                    else {
+                        newLine = tokens
+                            .map((t, idx) => {
+                            if (idx < colCount - 1) {
+                                return t.padEnd(colWidths[idx] + 4);
+                            }
+                            return t;
+                        })
+                            .join("");
+                    }
+                    lines[index] = newLine.trimEnd();
+                }
+                buffer.length = 0;
+            }
+            for (let i = 0; i < document.lineCount; i++) {
+                let line = document.lineAt(i).text;
+                // detect IMAGE start
+                if (/^IMAGE\s*\(/i.test(line)) {
+                    flushBuffer();
+                    inImageBlock = true;
+                    lines.push(line);
+                    continue;
+                }
+                if (inImageBlock && line.trim().startsWith("\\")) {
+                    inImageBlock = false;
+                    lines.push(line);
+                    continue;
+                }
+                if (inImageBlock) {
+                    lines.push(line);
+                    continue;
+                }
+                // detect comment start
+                if (/\/\*/.test(line)) {
+                    flushBuffer();
+                    inCommentBlock = true;
+                    lines.push(line);
+                    continue;
+                }
+                if (inCommentBlock) {
+                    lines.push(line);
+                    if (/\*\//.test(line)) {
+                        inCommentBlock = false;
+                    }
+                    continue;
+                }
+                // detect continuation (lots of spaces at start)
+                if (/^\s{20,}/.test(line)) {
+                    flushBuffer();
+                    lines.push(line);
+                    inContinuationBlock = true;
+                    continue;
+                }
+                else {
+                    inContinuationBlock = false;
+                }
+                // detect block types
+                if (/^(FIELD)\b/i.test(line)) {
+                    flushBuffer();
+                    currentColCount = 4;
+                    lines.push(line);
+                    continue;
+                }
+                if (/^(MAP|DEFAULTS|EDITS|LOCAL|PGM_FIELDS|DB_CALCS)\b/i.test(line)) {
+                    flushBuffer();
+                    currentColCount = 3;
+                    lines.push(line);
+                    continue;
+                }
+                if (/^(CALCS)\b/i.test(line)) {
+                    flushBuffer();
+                    currentColCount = 2;
+                    lines.push(line);
+                    continue;
+                }
+                if (/^(SCREEN|SCT_|SCR_|SUBFILE|SFL_|POSTING|PST_)/i.test(line)) {
+                    flushBuffer();
+                    currentColCount = 1;
+                    lines.push(line);
+                    continue;
+                }
+                // only align if there are multiple spaces
+                if (/\s{2,}/.test(line)) {
+                    const tokens = line
+                        .trim()
+                        .split(/\s{2,}/)
+                        .map((s) => s.trim());
+                    buffer.push({
+                        index: lines.length,
+                        tokens,
+                        colCount: currentColCount,
+                    });
                     lines.push(""); // placeholder
                 }
                 else {
@@ -114,16 +163,14 @@ function activate(context) {
                     lines.push(line);
                 }
             }
-            else {
-                flushBuffer();
-                lines.push(line);
+            flushBuffer();
+            for (let i = 0; i < document.lineCount; i++) {
+                if (lines[i] !== undefined && lines[i] !== document.lineAt(i).text) {
+                    edits.push(vscode.TextEdit.replace(document.lineAt(i).range, lines[i]));
+                }
             }
-        }
-        flushBuffer();
-        editor.edit((editBuilder) => {
-            const range = new vscode.Range(new vscode.Position(start, 0), new vscode.Position(end, document.lineAt(end).text.length));
-            editBuilder.replace(range, lines.join("\n"));
-        });
+            return edits;
+        },
     });
     context.subscriptions.push(disposable);
 }

@@ -94,7 +94,7 @@
 			"patterns": [
 				{
 					"name": "entity.name.function.klang",
-					"match": "\\b(LEN|FLD_TO_STRING|STRIP|DO_LIB|ap_bulat|ap_thbln|ap_akmhr|ap_tambl|ap_akhbl|BULAN|THBLN|THBLS|THBLS_DD|THBLS_MM|THBLS_YY|THBLS_YYYY|THBLLLS|THS|CHKDR|CHKDR_TGL|CHKTG|FLISI|FLSIZ|LASTWORD|ap_strln|ap_apprv)\\b"
+					"match": "\\b(LEN|FLD_TO_STRING|STRIP|DO_LIB|\\bap_[a-z0-9_]+\\b|BULAN|THBLN|THBLS|THBLS_DD|THBLS_MM|THBLS_YY|THBLS_YYYY|THBLLLS|THS|CHKDR|CHKDR_TGL|CHKTG|FLISI|FLSIZ|LASTWORD)\\b"
 				},
 				{
 					"name": "variable.parameter.klang",
@@ -136,7 +136,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.hook.klang",
-					"match": "\\b(cur_field|cur_keybd|IF|ELSE|HKCURSOR|HKMSG|STAY|NOSTAY|HOME)\\b"
+					"match": "\\b(\\bcur_[a-z0-9=_]+\\b|IF|ELSE|HKCURSOR|HKMSG|STAY|NOSTAY|HOME)\\b"
 				}
 			]
 		},

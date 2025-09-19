@@ -23,7 +23,8 @@
 				],
 				"filenames": [],
 				"filenamePatterns": [
-					"sct[0-9]{3,4}"
+					"sct*",
+					"tmp_*"
 				]
 			}
 		],
@@ -32,12 +33,6 @@
 				"language": "klang",
 				"scopeName": "source.klang",
 				"path": "./syntaxes/klang.tmLanguage.json"
-			}
-		],
-		"commands": [
-			{
-				"command": "klang-formatter.format",
-				"title": "Format Klang File"
 			}
 		]
 	},
