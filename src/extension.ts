@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 
-let formatterEnabled = true; // global flag to enable/disable
+let formatterEnabled = false; // global flag to enable/disable formatter
 
 export function activate(context: vscode.ExtensionContext) {
-	const toggleDisposable = vscode.commands.registerCommand(
+	// 🟦 1. Toggle formatter enable/disable
+	const toggleFormatterDisposable = vscode.commands.registerCommand(
 		"klang-formatter.toggle",
 		() => {
 			formatterEnabled = !formatterEnabled;
@@ -12,161 +13,222 @@ export function activate(context: vscode.ExtensionContext) {
 			);
 		}
 	);
-	let disposable = vscode.languages.registerDocumentFormattingEditProvider(
-		{ scheme: "file", language: "klang" },
-		{
-			provideDocumentFormattingEdits(
-				document: vscode.TextDocument
-			): vscode.TextEdit[] {
-				const edits: vscode.TextEdit[] = [];
-				const lines: string[] = [];
-				const buffer: { index: number; tokens: string[]; colCount: number }[] =
-					[];
+	context.subscriptions.push(toggleFormatterDisposable);
 
-				let inImageBlock = false;
-				let inCommentBlock = false;
-				let inContinuationBlock = false;
-				let currentColCount = 1; // default flat
+	// 🟩 2. Register formatter
+	const formatDisposable =
+		vscode.languages.registerDocumentFormattingEditProvider(
+			{ scheme: "file", language: "klang" },
+			{
+				provideDocumentFormattingEdits(
+					document: vscode.TextDocument
+				): vscode.TextEdit[] {
+					if (!formatterEnabled) return []; // respect toggle
 
-				function flushBuffer() {
-					if (buffer.length === 0) return;
+					const edits: vscode.TextEdit[] = [];
+					const lines: string[] = [];
+					const buffer: {
+						index: number;
+						tokens: string[];
+						colCount: number;
+					}[] = [];
 
-					// find max width per column
-					const colWidths: number[] = [];
-					for (const { tokens } of buffer) {
-						tokens.forEach((t, idx) => {
-							if (idx < currentColCount) {
-								colWidths[idx] = Math.max(colWidths[idx] || 0, t.length);
+					let inImageBlock = false;
+					let inCommentBlock = false;
+					let inContinuationBlock = false;
+					let currentColCount = 1;
+
+					function flushBuffer() {
+						if (buffer.length === 0) return;
+
+						// find max width per column
+						const colWidths: number[] = [];
+						for (const { tokens } of buffer) {
+							tokens.forEach((t, idx) => {
+								if (idx < currentColCount) {
+									colWidths[idx] = Math.max(colWidths[idx] || 0, t.length);
+								}
+							});
+						}
+
+						for (const { index, tokens, colCount } of buffer) {
+							let newLine = "";
+							if (colCount === 1) {
+								newLine = tokens.join(" ");
+							} else {
+								newLine = tokens
+									.map((t, idx) => {
+										if (idx < colCount - 1) {
+											return t.padEnd(colWidths[idx] + 4);
+										}
+										return t;
+									})
+									.join("");
 							}
-						});
+							lines[index] = newLine.trimEnd();
+						}
+
+						buffer.length = 0;
 					}
 
-					for (const { index, tokens, colCount } of buffer) {
-						let newLine = "";
-						if (colCount === 1) {
-							// just join
-							newLine = tokens.join(" ");
+					for (let i = 0; i < document.lineCount; i++) {
+						let line = document.lineAt(i).text;
+
+						// detect IMAGE block
+						if (/^IMAGE\s*\(/i.test(line)) {
+							flushBuffer();
+							inImageBlock = true;
+							lines.push(line);
+							continue;
+						}
+						if (inImageBlock && line.trim().startsWith("\\")) {
+							inImageBlock = false;
+							lines.push(line);
+							continue;
+						}
+						if (inImageBlock) {
+							lines.push(line);
+							continue;
+						}
+
+						// detect comment block
+						if (/\/\*/.test(line)) {
+							flushBuffer();
+							inCommentBlock = true;
+							lines.push(line);
+							continue;
+						}
+						if (inCommentBlock) {
+							lines.push(line);
+							if (/\*\//.test(line)) {
+								inCommentBlock = false;
+							}
+							continue;
+						}
+
+						// detect continuation
+						if (/^\s{10,}/.test(line)) {
+							flushBuffer();
+							lines.push(line);
+							inContinuationBlock = true;
+							continue;
 						} else {
-							newLine = tokens
-								.map((t, idx) => {
-									if (idx < colCount - 1) {
-										return t.padEnd(colWidths[idx] + 4);
-									}
-									return t;
-								})
-								.join("");
+							inContinuationBlock = false;
 						}
-						lines[index] = newLine.trimEnd();
-					}
 
-					buffer.length = 0;
-				}
-
-				for (let i = 0; i < document.lineCount; i++) {
-					let line = document.lineAt(i).text;
-
-					// detect IMAGE start
-					if (/^IMAGE\s*\(/i.test(line)) {
-						flushBuffer();
-						inImageBlock = true;
-						lines.push(line);
-						continue;
-					}
-					if (inImageBlock && line.trim().startsWith("\\")) {
-						inImageBlock = false;
-						lines.push(line);
-						continue;
-					}
-					if (inImageBlock) {
-						lines.push(line);
-						continue;
-					}
-
-					// detect comment start
-					if (/\/\*/.test(line)) {
-						flushBuffer();
-						inCommentBlock = true;
-						lines.push(line);
-						continue;
-					}
-					if (inCommentBlock) {
-						lines.push(line);
-						if (/\*\//.test(line)) {
-							inCommentBlock = false;
+						// detect block types
+						if (/^(FIELD)\b/i.test(line)) {
+							flushBuffer();
+							currentColCount = 4;
+							lines.push(line);
+							continue;
 						}
-						continue;
+						if (
+							/^(MAP|DEFAULTS|EDITS|LOCAL|PGM_FIELDS|DB_CALCS)\b/i.test(line)
+						) {
+							flushBuffer();
+							currentColCount = 3;
+							lines.push(line);
+							continue;
+						}
+						if (/^(CALCS)\b/i.test(line)) {
+							flushBuffer();
+							currentColCount = 2;
+							lines.push(line);
+							continue;
+						}
+						if (/^(SCREEN|SCT_|SCR_|SUBFILE|SFL_|POSTING|PST_)/i.test(line)) {
+							flushBuffer();
+							currentColCount = 1;
+							lines.push(line);
+							continue;
+						}
+
+						// align tokens if multiple spaces
+						if (/\s{2,}/.test(line)) {
+							const tokens = line
+								.trim()
+								.split(/\s{2,}/)
+								.map((s) => s.trim());
+							buffer.push({
+								index: lines.length,
+								tokens,
+								colCount: currentColCount,
+							});
+							lines.push(""); // placeholder
+						} else {
+							flushBuffer();
+							lines.push(line);
+						}
 					}
 
-					// detect continuation (lots of spaces at start)
-					if (/^\s{10,}/.test(line)) {
-						flushBuffer();
-						lines.push(line);
-						inContinuationBlock = true;
-						continue;
+					flushBuffer();
+
+					for (let i = 0; i < document.lineCount; i++) {
+						if (
+							lines[i] !== undefined &&
+							lines[i] !== document.lineAt(i).text
+						) {
+							edits.push(
+								vscode.TextEdit.replace(document.lineAt(i).range, lines[i])
+							);
+						}
+					}
+
+					return edits;
+				},
+			}
+		);
+	context.subscriptions.push(formatDisposable);
+
+	// 🟨 3. Ctrl+/ (Toggle Block Comment per Line)
+	const commentToggleDisposable = vscode.commands.registerCommand(
+		"klang-formatter.toggleComment",
+		() => {
+			const editor = vscode.window.activeTextEditor;
+			if (!editor) return;
+			const document = editor.document;
+			const selections = editor.selections;
+			editor.edit((editBuilder) => {
+				selections.forEach((selection) => {
+					if (selection.isEmpty) {
+						// Jika tidak ada seleksi, comment/uncomment baris saat ini
+						const line = document.lineAt(selection.start.line);
+						const lineText = line.text;
+						const trimmedText = lineText.trim();
+						if (trimmedText.startsWith("/*") && trimmedText.endsWith("*/")) {
+							// Uncomment: hapus /* dan */
+							const uncommented = trimmedText.slice(2, -2);
+							editBuilder.replace(
+								line.range,
+								lineText.replace(trimmedText, uncommented)
+							);
+						} else {
+							// Comment: tambah /* dan */
+							const commented = `/*${trimmedText}*/`;
+							editBuilder.replace(
+								line.range,
+								lineText.replace(trimmedText, commented)
+							);
+						}
 					} else {
-						inContinuationBlock = false;
+						// Jika ada seleksi, comment/uncomment teks yang dipilih
+						const selectedText = document.getText(selection);
+						if (selectedText.startsWith("/*") && selectedText.endsWith("*/")) {
+							// Uncomment: hapus /* dan */
+							const uncommented = selectedText.slice(2, -2);
+							editBuilder.replace(selection, uncommented);
+						} else {
+							// Comment: tambah /* dan */
+							const commented = `/*${selectedText}*/`;
+							editBuilder.replace(selection, commented);
+						}
 					}
-
-					// detect block types
-					if (/^(FIELD)\b/i.test(line)) {
-						flushBuffer();
-						currentColCount = 4;
-						lines.push(line);
-						continue;
-					}
-					if (/^(MAP|DEFAULTS|EDITS|LOCAL|PGM_FIELDS|DB_CALCS)\b/i.test(line)) {
-						flushBuffer();
-						currentColCount = 3;
-						lines.push(line);
-						continue;
-					}
-					if (/^(CALCS)\b/i.test(line)) {
-						flushBuffer();
-						currentColCount = 2;
-						lines.push(line);
-						continue;
-					}
-					if (/^(SCREEN|SCT_|SCR_|SUBFILE|SFL_|POSTING|PST_)/i.test(line)) {
-						flushBuffer();
-						currentColCount = 1;
-						lines.push(line);
-						continue;
-					}
-
-					// only align if there are multiple spaces
-					if (/\s{2,}/.test(line)) {
-						const tokens = line
-							.trim()
-							.split(/\s{2,}/)
-							.map((s) => s.trim());
-						buffer.push({
-							index: lines.length,
-							tokens,
-							colCount: currentColCount,
-						});
-						lines.push(""); // placeholder
-					} else {
-						flushBuffer();
-						lines.push(line);
-					}
-				}
-
-				flushBuffer();
-
-				for (let i = 0; i < document.lineCount; i++) {
-					if (lines[i] !== undefined && lines[i] !== document.lineAt(i).text) {
-						edits.push(
-							vscode.TextEdit.replace(document.lineAt(i).range, lines[i])
-						);
-					}
-				}
-
-				return edits;
-			},
+				});
+			});
 		}
 	);
-
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(commentToggleDisposable);
 }
 
 export function deactivate() {}

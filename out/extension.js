@@ -36,21 +36,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
-let formatterEnabled = true; // global flag to enable/disable
+let formatterEnabled = false; // global flag to enable/disable formatter
 function activate(context) {
-    const toggleDisposable = vscode.commands.registerCommand("klang-formatter.toggle", () => {
+    // 🟦 1. Toggle formatter enable/disable
+    const toggleFormatterDisposable = vscode.commands.registerCommand("klang-formatter.toggle", () => {
         formatterEnabled = !formatterEnabled;
         vscode.window.showInformationMessage(`Klang Formatter ${formatterEnabled ? "Enabled" : "Disabled"}`);
     });
-    let disposable = vscode.languages.registerDocumentFormattingEditProvider({ scheme: "file", language: "klang" }, {
+    context.subscriptions.push(toggleFormatterDisposable);
+    // 🟩 2. Register formatter
+    const formatDisposable = vscode.languages.registerDocumentFormattingEditProvider({ scheme: "file", language: "klang" }, {
         provideDocumentFormattingEdits(document) {
+            if (!formatterEnabled)
+                return []; // respect toggle
             const edits = [];
             const lines = [];
             const buffer = [];
             let inImageBlock = false;
             let inCommentBlock = false;
             let inContinuationBlock = false;
-            let currentColCount = 1; // default flat
+            let currentColCount = 1;
             function flushBuffer() {
                 if (buffer.length === 0)
                     return;
@@ -66,7 +71,6 @@ function activate(context) {
                 for (const { index, tokens, colCount } of buffer) {
                     let newLine = "";
                     if (colCount === 1) {
-                        // just join
                         newLine = tokens.join(" ");
                     }
                     else {
@@ -85,7 +89,7 @@ function activate(context) {
             }
             for (let i = 0; i < document.lineCount; i++) {
                 let line = document.lineAt(i).text;
-                // detect IMAGE start
+                // detect IMAGE block
                 if (/^IMAGE\s*\(/i.test(line)) {
                     flushBuffer();
                     inImageBlock = true;
@@ -101,7 +105,7 @@ function activate(context) {
                     lines.push(line);
                     continue;
                 }
-                // detect comment start
+                // detect comment block
                 if (/\/\*/.test(line)) {
                     flushBuffer();
                     inCommentBlock = true;
@@ -115,7 +119,7 @@ function activate(context) {
                     }
                     continue;
                 }
-                // detect continuation (lots of spaces at start)
+                // detect continuation
                 if (/^\s{10,}/.test(line)) {
                     flushBuffer();
                     lines.push(line);
@@ -150,7 +154,7 @@ function activate(context) {
                     lines.push(line);
                     continue;
                 }
-                // only align if there are multiple spaces
+                // align tokens if multiple spaces
                 if (/\s{2,}/.test(line)) {
                     const tokens = line
                         .trim()
@@ -170,13 +174,57 @@ function activate(context) {
             }
             flushBuffer();
             for (let i = 0; i < document.lineCount; i++) {
-                if (lines[i] !== undefined && lines[i] !== document.lineAt(i).text) {
+                if (lines[i] !== undefined &&
+                    lines[i] !== document.lineAt(i).text) {
                     edits.push(vscode.TextEdit.replace(document.lineAt(i).range, lines[i]));
                 }
             }
             return edits;
         },
     });
-    context.subscriptions.push(disposable);
+    context.subscriptions.push(formatDisposable);
+    // 🟨 3. Ctrl+/ (Toggle Block Comment per Line)
+    const commentToggleDisposable = vscode.commands.registerCommand("klang-formatter.toggleComment", () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        const document = editor.document;
+        const selections = editor.selections;
+        editor.edit((editBuilder) => {
+            selections.forEach((selection) => {
+                if (selection.isEmpty) {
+                    // Jika tidak ada seleksi, comment/uncomment baris saat ini
+                    const line = document.lineAt(selection.start.line);
+                    const lineText = line.text;
+                    const trimmedText = lineText.trim();
+                    if (trimmedText.startsWith("/*") && trimmedText.endsWith("*/")) {
+                        // Uncomment: hapus /* dan */
+                        const uncommented = trimmedText.slice(2, -2);
+                        editBuilder.replace(line.range, lineText.replace(trimmedText, uncommented));
+                    }
+                    else {
+                        // Comment: tambah /* dan */
+                        const commented = `/*${trimmedText}*/`;
+                        editBuilder.replace(line.range, lineText.replace(trimmedText, commented));
+                    }
+                }
+                else {
+                    // Jika ada seleksi, comment/uncomment teks yang dipilih
+                    const selectedText = document.getText(selection);
+                    if (selectedText.startsWith("/*") && selectedText.endsWith("*/")) {
+                        // Uncomment: hapus /* dan */
+                        const uncommented = selectedText.slice(2, -2);
+                        editBuilder.replace(selection, uncommented);
+                    }
+                    else {
+                        // Comment: tambah /* dan */
+                        const commented = `/*${selectedText}*/`;
+                        editBuilder.replace(selection, commented);
+                    }
+                }
+            });
+        });
+    });
+    context.subscriptions.push(commentToggleDisposable);
 }
 function deactivate() { }

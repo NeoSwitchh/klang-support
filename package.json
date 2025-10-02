@@ -25,7 +25,13 @@
 				"filenamePatterns": [
 					"sct*",
 					"tmp_*"
-				]
+				],
+				"comments": {
+					"blockComment": [
+						"/*",
+						"*/"
+					]
+				}
 			}
 		],
 		"grammars": [
@@ -34,7 +40,17 @@
 				"scopeName": "source.klang",
 				"path": "./syntaxes/klang.tmLanguage.json"
 			}
-		]
+		],
+		"configuration": {
+			"title": "Klang Support",
+			"properties": {
+				"klangSupport.enableFormatter": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable/disable Klang formatter"
+				}
+			}
+		}
 	},
 	"main": "./out/extension.js",
 	"scripts": {
