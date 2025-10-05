@@ -171,16 +171,16 @@ EDITS(master)
         e.Validate      psmcab  VALIDATE cabstskodidx mcab scab {Pgv_INPG}
 
 CALCS()
-        ctglkont        DO_LIB  ap_tambl(psmtgl,l3,&ltglkont);
-        ctglakhbl       DO_LIB  ap_akhbl(psmtgl,&ltglakhbl);
-
-CALCS()
         ctgllahir       psmtgl-psmtgllahir
         cumurok         lumur >= 6120
         
 MAP(mcab)
         cabkode psmcab          REPLACE
         cabnama lnamacabang     REPLACE
+
+CALCS()
+        ctglkont        DO_LIB  ap_tambl(psmtgl,l3,&ltglkont);
+        ctglakhbl       DO_LIB  ap_akhbl(psmtgl,&ltglakhbl);
 
 MAP(mtgltrn)
         ctglkont        psitglkont_1    DO_CALC
@@ -321,11 +321,9 @@ SFL_TARGET
 SFL_MAP
         psmnokk         kkdnobuk
 
-PERMIT(master)
-        PMT_UPDALL_COND cOPENok
-        PMT_DEL_COND cOPENbshps
-        PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
-                        IF cOPENhps2    t.HapusGambarDuluu
+/*
+BIRT Report 
+*/
 
 IMAGE(report) {LSTFLD_ADVANCE} {BASE_ROW=2}
 /----------------------------\
@@ -349,5 +347,10 @@ RT_COND cpil1
 USES_SCRIPT(scr131-pl.rptdesign)
 RT_HTML
 
+PERMIT(master)
+        PMT_UPDALL_COND cOPENok
+        PMT_DEL_COND cOPENbshps
+        PMT_DEL_MSG     IF cOPENhps1    t.StatusGakOPENN
+                        IF cOPENhps2    t.HapusGambarDuluu
 
 END_SCREEN
