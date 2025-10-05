@@ -322,7 +322,7 @@ SFL_MAP
         psmnokk         kkdnobuk
 
 /*
-BIRT Report 
+        BIRT Report 
 */
 
 IMAGE(report) {LSTFLD_ADVANCE} {BASE_ROW=2}
@@ -346,6 +346,10 @@ RTREE(report)
 RT_COND cpil1
 USES_SCRIPT(scr131-pl.rptdesign)
 RT_HTML
+
+/*
+        PERMIT
+*/
 
 PERMIT(master)
         PMT_UPDALL_COND cOPENok
